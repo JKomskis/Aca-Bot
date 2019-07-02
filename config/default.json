@@ -1,0 +1,17 @@
+{
+  "access_token": "access token from GroupMe",
+  "port": 8000,
+  "conversation_groups": [
+    {
+      "group_id": "group id",
+      "bot_id": "bot id"
+    }
+  ],
+  "management_groups": [
+    {
+      "group_id": "group id",
+      "bot_id": "bot id"
+    }
+  ],
+  "keyword_config_file": "./config/keywords.json"
+}

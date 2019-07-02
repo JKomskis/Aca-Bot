@@ -1,0 +1,8 @@
+{
+  "keywords": [
+    {
+      "regExp": "<regular expression>",
+      "response": "<response>"
+    }
+  ]
+}
