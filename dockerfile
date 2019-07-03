@@ -1,7 +1,11 @@
-FROM node:lts-alpine
+FROM node:lts
+
+# Use non-root user
+USER node
 
 # Create app directory
-WORKDIR /usr/src/app
+RUN mkdir /home/node/app
+WORKDIR /home/node/app
 
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
@@ -9,14 +13,16 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 #ADD repositories /etc/apk/repositories
-RUN apk add --update python python-dev py-pip build-base
+#RUN apk add --update python python-dev py-pip build-base
 
 RUN npm install
 # If you are building your code for production
 # RUN npm install --only=production
 
 # Bundle app source
-COPY . .
+COPY --chown=node:node . .
 
+# Compile project
 RUN npm run gulp
+
 CMD [ "npm", "start" ]

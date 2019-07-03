@@ -13,13 +13,14 @@ export class KeywordModule implements IModule {
     private removeMessageNotFound: string = "Keyword phrase not found.";
     private server: Server;
     private keywords: {keywords: Array<{regExp: string, response: string}>};
-    private regexpMatches: Map<RegExp, string>;
+    private regexpMatches: Map<string, RegExp>;
+    private regExpFlags = "mi";
 
     public constructor(server: Server) {
         this.logger = new Logger("KeywordModule");
 
         this.server = server;
-        this.regexpMatches = new Map<RegExp, string>();
+        this.regexpMatches = new Map<string, RegExp>();
 
         this.keywords = {keywords: []};
         if (config.has("keyword_config_file")) {
@@ -31,8 +32,8 @@ export class KeywordModule implements IModule {
         }
 
         for (const keyword of this.keywords.keywords) {
-            const regExp = new RegExp(keyword.regExp, "gmi");
-            this.regexpMatches.set(regExp, keyword.response);
+            const regExp = new RegExp(keyword.regExp, this.regExpFlags);
+            this.regexpMatches.set(keyword.regExp, regExp);
         }
 
         server.subscribeToMessages(this);
@@ -41,10 +42,18 @@ export class KeywordModule implements IModule {
 
     public processMessage(request: {group_id: string, text: string}): boolean {
         this.logger.info("Processing message");
-        for (const [regExp, response] of this.regexpMatches.entries()) {
+        for (const keyword of this.keywords.keywords) {
+            const regExp = this.regexpMatches.get(keyword.regExp);
+            if (regExp === undefined) {
+                this.logger.error("RegExp %s not in map", keyword.regExp);
+                return false;
+            }
+
+            this.logger.debug("Regexp: %s Response: %s Message: %s", regExp.source, keyword.response, request.text);
+            this.logger.debug("Match? %s", regExp.test(request.text));
             if (regExp.test(request.text)) {
                 this.logger.info("Found match for keyword");
-                this.server.sendMessage(request.group_id, response);
+                this.server.sendMessage(request.group_id, keyword.response);
                 return true;
             }
         }
@@ -114,10 +123,10 @@ export class KeywordModule implements IModule {
         }
 
         const keyword = request.text.substring(keywordStart + 1, keywordEnd);
-        const regExp = new RegExp(keyword, "gmi");
+        const regExp = new RegExp(keyword, this.regExpFlags);
         const response = request.text.substring(responseStart + 1, responseEnd);
 
-        this.regexpMatches.set(regExp, response);
+        this.regexpMatches.set(keyword, regExp);
         const idx = this.keywords.keywords.findIndex((element) => element.regExp === keyword);
         if (idx !== -1) {
             this.keywords.keywords[idx].response = response;
@@ -160,12 +169,12 @@ export class KeywordModule implements IModule {
         }
 
         const keyword = request.text.substring(keywordStart + 1, keywordEnd);
-        const regExp = new RegExp(keyword, "gmi");
+        const regExp = new RegExp(keyword, this.regExpFlags);
 
         if (this.keywords.keywords.findIndex((element) => element.regExp === keyword) === -1) {
             this.server.sendMessage(request.group_id, this.removeMessageNotFound);
         } else {
-            this.regexpMatches.delete(regExp);
+            this.regexpMatches.delete(keyword);
             this.keywords.keywords.splice(this.keywords.keywords.findIndex((element) => element.regExp === keyword), 1);
 
             this.persistKeywords();

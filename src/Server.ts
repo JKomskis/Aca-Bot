@@ -97,7 +97,7 @@ export class Server {
             this.logger.warn("Corresponding bot id for group id %d not found", groupId);
         }
 
-        this.logger.info("Sending message. Bot id: %d Text: %s", botId, message);
+        this.logger.info("Sending message. Bot id: %s Text: %s", botId, message);
         request.post(this.groupMeBotSendMessageUrl, {
             qs: {
                 bot_id: botId,
